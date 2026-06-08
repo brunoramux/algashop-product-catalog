@@ -21,11 +21,11 @@ public class ProductCatalogSecurityConfig {
         sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(
-                        auth -> auth.anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(
-                        oauth2 -> oauth2.jwt(Customizer.withDefaults())
+                        auth -> auth.anyRequest().permitAll()
                 );
+//                .oauth2ResourceServer(
+//                        oauth2 -> oauth2.jwt(Customizer.withDefaults())
+//                );
 
         return http.build();
     }
