@@ -1,5 +1,9 @@
 package com.algaworks.algashop.product.catalog.presentation;
 
+import com.algaworks.algashop.product.catalog.application.product.management.ProductInput;
+import com.algaworks.algashop.product.catalog.application.product.management.ProductManagementApplicationService;
+import com.algaworks.algashop.product.catalog.application.product.query.ProductQueryService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,11 +13,18 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/products")
+@RequiredArgsConstructor
 public class ProductController {
+
+    private final ProductManagementApplicationService productManagementApplicationService;
+    private final ProductQueryService productQueryService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ProductDetailOutput create(@RequestBody ProductInput input) {
+
+        productManagementApplicationService.create(input);
+
         return ProductDetailOutput.builder()
                 .id(UUID.randomUUID())
                 .addedAt(OffsetDateTime.now())
