@@ -1,7 +1,10 @@
 package com.algaworks.algashop.product.catalog.presentation;
 
+import com.algaworks.algashop.product.catalog.application.PageModel;
 import com.algaworks.algashop.product.catalog.application.product.management.ProductInput;
 import com.algaworks.algashop.product.catalog.application.product.management.ProductManagementApplicationService;
+import com.algaworks.algashop.product.catalog.application.product.query.ProductDetailOutput;
+import com.algaworks.algashop.product.catalog.application.product.query.ProductFilter;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,47 +26,37 @@ public class ProductController {
     @ResponseStatus(HttpStatus.CREATED)
     public ProductDetailOutput create(@RequestBody ProductInput input) {
 
-        productManagementApplicationService.create(input);
+        UUID productId = productManagementApplicationService.create(input);
+        return productQueryService.findById(productId);
 
-        return ProductDetailOutput.builder()
-                .id(UUID.randomUUID())
-                .addedAt(OffsetDateTime.now())
-                .inStock(false)
-                .name(input.getName())
-                .brand(input.getBrand())
-                .name(input.getName())
-                .brand(input.getBrand())
-                .description(input.getDescription())
-                .regularPrice(input.getRegularPrice())
-                .salePrice(input.getSalePrice())
-                .enabled(input.getEnabled())
-                .category(
-                        CategoryMinimalOutput.builder()
-                                .id(input.getCategoryId())
-                                .name("Notebook")
-                                .build()
-                )
-                .build();
     }
 
     @GetMapping("/{productId}")
     public ProductDetailOutput findById(@PathVariable UUID productId) {
-        return ProductDetailOutput.builder()
-                .id(productId)
-                .addedAt(OffsetDateTime.now())
-                .name("Notebook X11")
-                .brand("Deep Diver")
-                .description("A Gamer Notebook")
-                .regularPrice(new BigDecimal("1500.00"))
-                .salePrice(new BigDecimal("1000.00"))
-                .inStock(false)
-                .enabled(true)
-                .category(
-                        CategoryMinimalOutput.builder()
-                                .id(UUID.randomUUID())
-                                .name("Notebook")
-                                .build()
-                )
-                .build();
+        return productQueryService.findById(productId);
+    }
+
+    @PutMapping("/{productId}")
+    public ProductDetailOutput update(@PathVariable UUID productId, @RequestBody ProductInput input) {
+        productManagementApplicationService.update(productId, input);
+
+        return productQueryService.findById(productId);
+    }
+
+    @PutMapping("/{productId}/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void enable(@PathVariable UUID productId, @RequestBody ProductInput input) {
+        productManagementApplicationService.disable(productId);
+    }
+
+    @DeleteMapping("/{productId}/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void disable(@PathVariable UUID productId) {
+        productManagementApplicationService.disable(productId);
+    }
+
+    @GetMapping
+    public PageModel<ProductDetailOutput> filter(ProductFilter filter) {
+        return productQueryService.filter(filter);
     }
 }

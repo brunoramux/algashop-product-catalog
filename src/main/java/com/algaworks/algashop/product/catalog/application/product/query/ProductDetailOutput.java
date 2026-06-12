@@ -24,4 +24,10 @@ public class ProductDetailOutput {
     private Boolean enabled;
     private CategoryMinimalOutput category;
     private String description;
+
+    private String slug;
+    private Boolean hasDiscount;
+
+    private Integer quantityInStock;
+    private Integer discountPercentageRounded;
 }
