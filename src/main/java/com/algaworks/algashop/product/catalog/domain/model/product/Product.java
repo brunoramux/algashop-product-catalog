@@ -34,12 +34,14 @@ public class Product extends AbstractAggregateRoot<Product> {
     @EqualsAndHashCode.Include
     private UUID id;
 
+    // INDEX TEXTUAL
     @TextIndexed(weight = 1)
     private String name;
 
     @Indexed(name = "idx_product_by_brand")
     private String brand;
 
+    // INDEX TEXTUAL
     @TextIndexed(weight = 5)
     private String description;
 
@@ -70,6 +72,7 @@ public class Product extends AbstractAggregateRoot<Product> {
 
     private Integer discountPercentageRounded;
 
+    // UTILIZADO PARA FILTROS TEXTUAIS
     @TextScore
     private Float score;
 
