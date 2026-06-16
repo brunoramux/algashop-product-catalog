@@ -13,17 +13,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.aggregation.AggregationExpressionCriteria;
-import org.springframework.data.mongodb.core.aggregation.ComparisonOperators;
+import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.CriteriaDefinition;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -44,34 +40,137 @@ public class ProductQueryServiceImpl implements ProductQueryService {
 
     @Override
     public PageModel<ProductDetailOutput> filter(ProductFilter filter) {
-        Query query = queryWith(filter);
-        long totalItems = mongoOperations.count(query, Product.class);
-        Sort sort = sortWith(filter);
+        Optional<Criteria> criteria = buildCriteria(filter);
+        Optional<TextCriteria> textCriteria = buildTextCriteria(filter);
 
-        PageRequest pageRequest = PageRequest.of(filter.getPage(), filter.getSize(), sort);
-        Query pagedQuery = query.with(pageRequest);
+        List<AggregationOperation> operations = new ArrayList<>();
 
-        List<Product> products;
-        int totalPages = 0;
+        textCriteria.ifPresent(c -> operations.add(Aggregation.match(c)));
+        criteria.ifPresent(c -> operations.add(Aggregation.match(c)));
 
-        if (totalItems > 0) {
-            products = mongoOperations.find(pagedQuery, Product.class);
-            totalPages = (int) Math.ceil((double) totalItems / pageRequest.getPageSize());
-        } else {
-            products = new ArrayList<>();
-        }
+        PageRequest pageRequest = PageRequest.of(filter.getPage(), filter.getSize());
 
-        List<ProductDetailOutput> productOutputs = products.stream()
-                .map(p -> mapper.convert(p, ProductDetailOutput.class))
-                .collect(Collectors.toList());
+        operations.addAll(Arrays.asList(
+                Aggregation.lookup("categories", "categoryId", "_id", "category"),
+                Aggregation.unwind("$category"),
+                Aggregation.sort(sortWith(filter)),
+                projectionForSummary(),
+                Aggregation.skip(pageRequest.getOffset()),
+                Aggregation.limit(filter.getSize())
+        ));
+
+        Aggregation aggregation = Aggregation.newAggregation(operations);
+
+        List<ProductDetailOutput> productSummaryOutputs = mongoOperations
+                .aggregate(aggregation, Product.class, ProductDetailOutput.class)
+                .getMappedResults();
 
         return PageModel.<ProductDetailOutput>builder()
-                .content(productOutputs)
-                .number(pageRequest.getPageNumber())
-                .size(pageRequest.getPageSize())
-                .totalElements(totalItems)
-                .totalPages(totalPages)
+                .content(productSummaryOutputs)
+                .number(filter.getPage())
+                .size(filter.getSize())
+                .totalElements(10)
+                .totalPages(10)
                 .build();
+
+    }
+
+    private ProjectionOperation projectionForSummary() {
+        return Aggregation.project()
+                .and("_id").as("_id")
+                .and("addedAt").as("addedAt")
+                .and("name").as("name")
+                .and("brand").as("brand")
+                .and("regularPrice").as("regularPrice")
+                .and("salePrice").as("salePrice")
+                .and("enabled").as("enabled")
+                .and("quantityInStock").as("quantityInStock")
+                .and("discountPercentageRounded").as("discountPercentageRounded")
+                .and("score").as("score")
+                .and("category._id").as("category._id")
+                .and("category.name").as("category.name");
+    }
+
+    private Optional<TextCriteria> buildTextCriteria(ProductFilter filter) {
+        if (StringUtils.isNotBlank(filter.getTerm())) {
+            return Optional.of(TextCriteria.forDefaultLanguage().matching(filter.getTerm()));
+        }
+        return Optional.empty();
+    }
+
+    private Optional<Criteria> buildCriteria(ProductFilter filter) {
+        List<CriteriaDefinition> criteriaList = new ArrayList<>();
+
+        if (filter.getEnabled() != null) {
+            criteriaList.add(Criteria.where("enabled").is(filter.getEnabled()));
+        }
+
+        if(filter.getAddedAtFrom()  != null && filter.getAddedAtTo() != null) {
+            criteriaList.add(Criteria.where("addedAt")
+                    .gte(filter.getAddedAtFrom())
+                    .lte(filter.getAddedAtTo())
+            );
+        } else {
+            if(filter.getAddedAtTo()  != null) {
+                criteriaList.add(Criteria.where("addedAt").lte(filter.getAddedAtTo()));
+            } else if(filter.getAddedAtFrom() != null) {
+                criteriaList.add(Criteria.where("addedAt")
+                        .gte(filter.getAddedAtFrom())
+                );
+            }
+        }
+
+        if(filter.getPriceFrom() != null && filter.getPriceTo() != null) {
+            criteriaList.add(Criteria.where("salePrice")
+                    .gte(filter.getPriceFrom())
+                    .lte(filter.getPriceTo())
+            );
+        } else {
+            if(filter.getPriceFrom() != null) {
+                criteriaList.add(Criteria.where("salePrice")
+                        .gte(filter.getPriceFrom()));
+            } else if(filter.getPriceTo() != null) {
+                criteriaList.add(Criteria.where("salePrice")
+                        .lte(filter.getPriceTo())
+                );
+            }
+        }
+
+        if(filter.getHasDiscount() != null) {
+            if(filter.getHasDiscount()) {
+                criteriaList.add(AggregationExpressionCriteria.whereExpr(
+                        ComparisonOperators.valueOf("$salePrice")
+                                .lessThan("$regularPrice")
+                ));
+            } else {
+                criteriaList.add(AggregationExpressionCriteria.whereExpr(
+                        ComparisonOperators.valueOf("$salePrice")
+                                .equalTo("$regularPrice")
+                ));
+            }
+        }
+
+        if (filter.getInStock() != null) {
+            if (filter.getInStock()) {
+                criteriaList.add(Criteria.where("quantityInStock").gt(0));
+            } else {
+                criteriaList.add(Criteria.where("quantityInStock").is(0));
+            }
+        }
+
+        if (filter.getCategoriesId() != null && filter.getCategoriesId().length > 0) {
+            criteriaList.add(Criteria.where("categoryId").in(
+                    (Object[]) filter.getCategoriesId()
+            ));
+        }
+
+        if(criteriaList.isEmpty()){
+            return Optional.empty();
+        }
+
+        return Optional.of(
+                new Criteria().andOperator(criteriaList.toArray(new Criteria[0]))
+        );
     }
 
     private Sort sortWith(ProductFilter filter) {
@@ -81,80 +180,5 @@ public class ProductQueryServiceImpl implements ProductQueryService {
         }
         return Sort.by(filter.getSortDirectionOrDefault(),
                 filter.getSortByPropertyOrDefault().getPropertyName());
-    }
-
-    private Query queryWith(ProductFilter filter) {
-        Query query = new Query();
-
-        if (filter.getEnabled() != null) {
-            query.addCriteria(Criteria.where("enabled").is(filter.getEnabled()));
-        }
-
-        if(filter.getAddedAtFrom()  != null && filter.getAddedAtTo() != null) {
-            query.addCriteria(Criteria.where("addedAt")
-                    .gte(filter.getAddedAtFrom())
-                    .lte(filter.getAddedAtTo())
-            );
-        } else {
-            if(filter.getAddedAtTo()  != null) {
-                query.addCriteria(Criteria.where("addedAt").lte(filter.getAddedAtTo()));
-            } else if(filter.getAddedAtFrom() != null) {
-                query.addCriteria(Criteria.where("addedAt")
-                        .gte(filter.getAddedAtFrom())
-                );
-            }
-        }
-
-        if(filter.getPriceFrom() != null && filter.getPriceTo() != null) {
-            query.addCriteria(Criteria.where("salePrice")
-                    .gte(filter.getPriceFrom())
-                    .lte(filter.getPriceTo())
-            );
-        } else {
-            if(filter.getPriceFrom() != null) {
-                query.addCriteria(Criteria.where("salePrice")
-                        .gte(filter.getPriceFrom()));
-            } else if(filter.getPriceTo() != null) {
-                query.addCriteria(Criteria.where("salePrice")
-                        .lte(filter.getPriceTo())
-                );
-            }
-        }
-
-        if(filter.getHasDiscount() != null) {
-            if(filter.getHasDiscount()) {
-                query.addCriteria(AggregationExpressionCriteria.whereExpr(
-                        ComparisonOperators.valueOf("$salePrice")
-                                .lessThan("$regularPrice")
-                ));
-            } else {
-                query.addCriteria(AggregationExpressionCriteria.whereExpr(
-                        ComparisonOperators.valueOf("$salePrice")
-                                .equalTo("$regularPrice")
-                ));
-            }
-        }
-
-        if (filter.getInStock() != null) {
-            if (filter.getInStock()) {
-                query.addCriteria(Criteria.where("quantityInStock").gt(0));
-            } else {
-                query.addCriteria(Criteria.where("quantityInStock").is(0));
-            }
-        }
-
-        if (filter.getCategoriesId() != null && filter.getCategoriesId().length > 0) {
-            query.addCriteria(Criteria.where("categoryId").in(
-                    (Object[]) filter.getCategoriesId()
-            ));
-        }
-
-        if (StringUtils.isNotBlank(filter.getTerm())) {
-            query.addCriteria(
-                    TextCriteria.forDefaultLanguage().matching(filter.getTerm())
-            );
-        }
-
-        return query;
     }
 }

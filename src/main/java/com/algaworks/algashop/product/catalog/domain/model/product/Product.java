@@ -68,6 +68,8 @@ public class Product extends AbstractAggregateRoot<Product> {
     @LastModifiedBy
     private UUID lastModifiedByUserId;
 
+    @DocumentReference
+    @Field(name = "categoryId")
     private ProductCategory category;
 
     private Integer discountPercentageRounded;
