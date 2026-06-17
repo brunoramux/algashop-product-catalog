@@ -3,6 +3,7 @@ package com.algaworks.algashop.product.catalog.domain.model.product;
 import com.algaworks.algashop.product.catalog.domain.model.DomainException;
 import com.algaworks.algashop.product.catalog.domain.model.IdGenerator;
 import com.algaworks.algashop.product.catalog.domain.model.category.Category;
+import com.algaworks.algashop.product.catalog.infrastructure.utility.Slugfier;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.annotation.*;
@@ -37,6 +38,8 @@ public class Product extends AbstractAggregateRoot<Product> {
     // INDEX TEXTUAL
     @TextIndexed(weight = 1)
     private String name;
+
+    private String slug;
 
     @Indexed(name = "idx_product_by_brand")
     private String brand;
@@ -93,6 +96,7 @@ public class Product extends AbstractAggregateRoot<Product> {
         this.setRegularPrice(regularPrice);
         this.setSalePrice(salePrice);
         this.setCategory(category);
+        this.setSlug(name);
 
         super.registerEvent(ProductAddedEvent.builder().productId(this.id).build());
     }
@@ -284,6 +288,10 @@ public class Product extends AbstractAggregateRoot<Product> {
 
     private void setMainImage(Image mainImage) {
         this.mainImage = mainImage;
+    }
+
+    private void setSlug(String slug) {
+       this.slug = Slugfier.slugify(slug);
     }
 
     private void calculateDiscountPercentage() {

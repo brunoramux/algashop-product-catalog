@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.CriteriaDefinition;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,12 @@ public class ProductQueryServiceImpl implements ProductQueryService {
         Optional<Criteria> criteria = buildCriteria(filter);
         Optional<TextCriteria> textCriteria = buildTextCriteria(filter);
 
+        Query query = new Query();
+        textCriteria.ifPresent(query::addCriteria);
+        criteria.ifPresent(query::addCriteria);
+
+        long totalElements = mongoOperations.count(query, Product.class);
+
         List<AggregationOperation> operations = new ArrayList<>();
 
         textCriteria.ifPresent(c -> operations.add(Aggregation.match(c)));
@@ -69,8 +76,8 @@ public class ProductQueryServiceImpl implements ProductQueryService {
                 .content(productSummaryOutputs)
                 .number(filter.getPage())
                 .size(filter.getSize())
-                .totalElements(10)
-                .totalPages(10)
+                .totalElements(totalElements)
+                .totalPages((int) Math.ceil((double) totalElements / filter.getSize()))
                 .build();
 
     }
@@ -88,7 +95,12 @@ public class ProductQueryServiceImpl implements ProductQueryService {
                 .and("discountPercentageRounded").as("discountPercentageRounded")
                 .and("score").as("score")
                 .and("category._id").as("category._id")
-                .and("category.name").as("category.name");
+                .and("category.name").as("category.name")
+                .and("description").as("description")
+                .and("slug").as("slug")
+                .andExpression("salePrice < regularPrice").as("hasDiscount")
+                .andExpression("quantityInStock > 0").as("inStock");
+
     }
 
     private Optional<TextCriteria> buildTextCriteria(ProductFilter filter) {
