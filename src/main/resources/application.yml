@@ -3,9 +3,18 @@ server.port: 8083
 spring:
   application:
     name: product-catalog
+  cache:
+    type: redis
   mongodb:
     uri: mongodb://root:algashop@localhost:27017/product_catalog?authSource=admin
     representation.uuid: standard
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: algashop
+      database: 0
+      timeout: 600
 
 logging:
   level:
