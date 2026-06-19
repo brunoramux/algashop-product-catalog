@@ -7,10 +7,13 @@ import com.algaworks.algashop.product.catalog.application.product.query.ProductD
 import com.algaworks.algashop.product.catalog.application.product.query.ProductFilter;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -32,8 +35,14 @@ public class ProductController {
     }
 
     @GetMapping("/{productId}")
-    public ProductDetailOutput findById(@PathVariable UUID productId) {
-        return productQueryService.findById(productId);
+    public ResponseEntity<ProductDetailOutput> findById(@PathVariable UUID productId) {
+        ProductDetailOutput productDetail = productQueryService.findById(productId);
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic())
+                .eTag("product:id:" + productDetail.getId() + ":v:" + productDetail.getVersion())
+                .lastModified(productDetail.getUpdatedAt().toInstant())
+                .body(productDetail);
     }
 
     @PutMapping("/{productId}")

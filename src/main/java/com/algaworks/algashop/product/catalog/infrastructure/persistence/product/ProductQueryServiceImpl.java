@@ -98,6 +98,8 @@ public class ProductQueryServiceImpl implements ProductQueryService {
                 .and("category.name").as("category.name")
                 .and("description").as("description")
                 .and("slug").as("slug")
+                .and("version").as("version")
+                .and("updatedAt").as("updatedAt")
                 .andExpression("salePrice < regularPrice").as("hasDiscount")
                 .andExpression("quantityInStock > 0").as("inStock");
 
