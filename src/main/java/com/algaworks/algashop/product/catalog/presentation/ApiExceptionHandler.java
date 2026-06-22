@@ -1,6 +1,7 @@
 package com.algaworks.algashop.product.catalog.presentation;
 
 import com.algaworks.algashop.product.catalog.application.ResourceNotFoundException;
+import com.algaworks.algashop.product.catalog.domain.model.DomainException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -52,6 +53,15 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Not found");
         problemDetail.setDetail(exception.getMessage());
         problemDetail.setType(URI.create("/errors/not-found"));
+        return problemDetail;
+    }
+
+    @ExceptionHandler(DomainException.class)
+    public ProblemDetail handleDomainException(DomainException exception) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
+        problemDetail.setTitle("Business rule violation");
+        problemDetail.setDetail(exception.getMessage());
+        problemDetail.setType(URI.create("/errors/business-rule-violation"));
         return problemDetail;
     }
 

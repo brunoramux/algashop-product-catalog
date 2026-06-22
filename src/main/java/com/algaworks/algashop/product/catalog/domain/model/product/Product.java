@@ -96,7 +96,6 @@ public class Product extends AbstractAggregateRoot<Product> {
         this.setRegularPrice(regularPrice);
         this.setSalePrice(salePrice);
         this.setCategory(category);
-        this.setSlug(name);
 
         super.registerEvent(ProductAddedEvent.builder().productId(this.id).build());
     }
@@ -106,6 +105,7 @@ public class Product extends AbstractAggregateRoot<Product> {
             throw new IllegalArgumentException();
         }
         this.name = name;
+        this.setSlug(name);
     }
 
     public void setBrand(String brand) {

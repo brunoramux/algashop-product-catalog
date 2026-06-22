@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -34,4 +35,7 @@ public class ProductDetailOutput implements Serializable {
 
     private Long version;
     private OffsetDateTime updatedAt;
+
+    private ImageOutput mainImage;
+    private Set<ImageOutput> images;
 }

@@ -3,18 +3,19 @@ package com.algaworks.algashop.product.catalog.presentation;
 import com.algaworks.algashop.product.catalog.application.PageModel;
 import com.algaworks.algashop.product.catalog.application.product.management.ProductInput;
 import com.algaworks.algashop.product.catalog.application.product.management.ProductManagementApplicationService;
+import com.algaworks.algashop.product.catalog.application.product.management.StockInput;
+import com.algaworks.algashop.product.catalog.application.product.management.StockManagementApplicationService;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductDetailOutput;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductFilter;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @RestController
@@ -24,14 +25,13 @@ public class ProductController {
 
     private final ProductManagementApplicationService productManagementApplicationService;
     private final ProductQueryService productQueryService;
+    private final StockManagementApplicationService stockManagementApplicationService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProductDetailOutput create(@RequestBody ProductInput input) {
-
+    public ProductDetailOutput create(@RequestBody @Valid ProductInput input) {
         ProductDetailOutput productDetailOutput = productManagementApplicationService.create(input);
         return productQueryService.findById(productDetailOutput.getId());
-
     }
 
     @GetMapping("/{productId}")
@@ -46,14 +46,15 @@ public class ProductController {
     }
 
     @PutMapping("/{productId}")
-    public ProductDetailOutput update(@PathVariable UUID productId, @RequestBody ProductInput input) {
+    public ProductDetailOutput update(@PathVariable UUID productId,
+                                      @RequestBody @Valid ProductInput input) {
         return productManagementApplicationService.update(productId, input);
     }
 
     @PutMapping("/{productId}/enable")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void enable(@PathVariable UUID productId, @RequestBody ProductInput input) {
-        productManagementApplicationService.disable(productId);
+    public void enable(@PathVariable UUID productId) {
+        productManagementApplicationService.enable(productId);
     }
 
     @DeleteMapping("/{productId}/enable")
@@ -66,4 +67,19 @@ public class ProductController {
     public PageModel<ProductDetailOutput> filter(ProductFilter filter) {
         return productQueryService.filter(filter);
     }
+
+    @PostMapping("/{productId}/restock")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void restock(@PathVariable UUID productId,
+                        @RequestBody @Valid StockInput input) {
+        stockManagementApplicationService.restock(productId, input);
+    }
+
+    @PostMapping("/{productId}/withdraw")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void withdraw(@PathVariable UUID productId,
+                         @RequestBody @Valid StockInput input) {
+        stockManagementApplicationService.withdraw(productId, input);
+    }
 }
+

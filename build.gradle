@@ -34,6 +34,7 @@ publishing {
 ext {
 	set('springCloudVersion', "2025.1.0")
 	set('snippetsDir', file("build/generated-snippets"))
+	set('awsSdkVersion', "2.31.51")
 }
 
 configurations {
@@ -53,6 +54,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+	implementation "software.amazon.awssdk:s3:${awsSdkVersion}"
+	implementation "software.amazon.awssdk:url-connection-client:${awsSdkVersion}"
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test'

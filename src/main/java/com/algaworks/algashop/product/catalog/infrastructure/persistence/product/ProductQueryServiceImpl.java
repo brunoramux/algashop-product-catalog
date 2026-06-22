@@ -2,10 +2,13 @@ package com.algaworks.algashop.product.catalog.infrastructure.persistence.produc
 
 import com.algaworks.algashop.product.catalog.application.PageModel;
 import com.algaworks.algashop.product.catalog.application.ResourceNotFoundException;
+import com.algaworks.algashop.product.catalog.application.product.query.ImageOutput;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductDetailOutput;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductFilter;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductQueryService;
+import com.algaworks.algashop.product.catalog.application.upload.ProductImageStorageService;
 import com.algaworks.algashop.product.catalog.application.utility.Mapper;
+import com.algaworks.algashop.product.catalog.domain.model.product.Image;
 import com.algaworks.algashop.product.catalog.domain.model.product.Product;
 import com.algaworks.algashop.product.catalog.domain.model.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,15 +32,17 @@ public class ProductQueryServiceImpl implements ProductQueryService {
 
     private final ProductRepository productRepository;
     private final Mapper mapper;
-
     private final MongoOperations mongoOperations;
+    private final ProductImageStorageService productImageStorageService;
 
     private static final String findWordRegex = "(?i)%s";
 
     @Override
     public ProductDetailOutput findById(UUID productId) {
         Product product = productRepository.findById(productId).orElseThrow(ResourceNotFoundException::new);
-        return mapper.convert(product, ProductDetailOutput.class);
+        ProductDetailOutput output = mapper.convert(product, ProductDetailOutput.class);
+        resolveImageUrls(output, product);
+        return output;
     }
 
     @Override
@@ -80,6 +86,24 @@ public class ProductQueryServiceImpl implements ProductQueryService {
                 .totalPages((int) Math.ceil((double) totalElements / filter.getSize()))
                 .build();
 
+    }
+
+    private void resolveImageUrls(ProductDetailOutput output, Product product) {
+        if (product.getMainImage() != null) {
+            output.setMainImage(toImageOutput(product.getMainImage()));
+        }
+        if (product.getImages() != null && !product.getImages().isEmpty()) {
+            output.setImages(product.getImages().stream()
+                    .map(this::toImageOutput)
+                    .collect(Collectors.toSet()));
+        }
+    }
+
+    private ImageOutput toImageOutput(Image image) {
+        return ImageOutput.builder()
+                .id(image.getId())
+                .url(productImageStorageService.buildImageUrl(image.getName()))
+                .build();
     }
 
     private ProjectionOperation projectionForSummary() {
