@@ -2,15 +2,15 @@ package com.algaworks.algashop.product.catalog.application.product.management;
 
 import com.algaworks.algashop.product.catalog.application.ResourceNotFoundException;
 import com.algaworks.algashop.product.catalog.application.product.query.ImageOutput;
+import com.algaworks.algashop.product.catalog.application.upload.ProductImageStorageService;
 import com.algaworks.algashop.product.catalog.domain.model.product.Image;
 import com.algaworks.algashop.product.catalog.domain.model.product.Product;
 import com.algaworks.algashop.product.catalog.domain.model.product.ProductRepository;
-import com.algaworks.algashop.product.catalog.application.upload.ProductImageStorageService;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +26,16 @@ public class ProductImageApplicationService {
         UUID imageId = product.addImage(input.getRemoteFileName());
         productRepository.save(product);
         return buildImageOutput(imageId, input.getRemoteFileName());
+    }
+
+    public ImageOutput uploadAndAddImage(UUID productId, String originalFileName,
+                                         InputStream content, long contentLength, String contentType) {
+        Product product = findProduct(productId);
+        String remoteFileName = productImageStorageService.uploadImage(
+                originalFileName, content, contentLength, contentType);
+        UUID imageId = product.addImage(remoteFileName);
+        productRepository.save(product);
+        return buildImageOutput(imageId, remoteFileName);
     }
 
     public List<ImageOutput> listImages(UUID productId) {
@@ -67,4 +77,3 @@ public class ProductImageApplicationService {
                 .build();
     }
 }
-

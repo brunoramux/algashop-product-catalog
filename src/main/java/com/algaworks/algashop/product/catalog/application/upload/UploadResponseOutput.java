@@ -15,5 +15,6 @@ public class UploadResponseOutput {
     private Long contentLength;
     private String contentType;
     private String uploadSignedUrl;
+    
 }
 
