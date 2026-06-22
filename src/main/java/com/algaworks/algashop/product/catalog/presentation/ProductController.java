@@ -29,8 +29,8 @@ public class ProductController {
     @ResponseStatus(HttpStatus.CREATED)
     public ProductDetailOutput create(@RequestBody ProductInput input) {
 
-        UUID productId = productManagementApplicationService.create(input);
-        return productQueryService.findById(productId);
+        ProductDetailOutput productDetailOutput = productManagementApplicationService.create(input);
+        return productQueryService.findById(productDetailOutput.getId());
 
     }
 
@@ -47,9 +47,7 @@ public class ProductController {
 
     @PutMapping("/{productId}")
     public ProductDetailOutput update(@PathVariable UUID productId, @RequestBody ProductInput input) {
-        productManagementApplicationService.update(productId, input);
-
-        return productQueryService.findById(productId);
+        return productManagementApplicationService.update(productId, input);
     }
 
     @PutMapping("/{productId}/enable")

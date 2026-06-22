@@ -1,12 +1,15 @@
 package com.algaworks.algashop.product.catalog.application.product.management;
 
 import com.algaworks.algashop.product.catalog.application.ResourceNotFoundException;
+import com.algaworks.algashop.product.catalog.application.product.query.ProductDetailOutput;
+import com.algaworks.algashop.product.catalog.application.utility.Mapper;
 import com.algaworks.algashop.product.catalog.domain.model.category.Category;
 import com.algaworks.algashop.product.catalog.domain.model.category.CategoryRepository;
 import com.algaworks.algashop.product.catalog.domain.model.product.Product;
 import com.algaworks.algashop.product.catalog.domain.model.product.ProductRepository;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -17,11 +20,13 @@ public class ProductManagementApplicationService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final Mapper mapper;
 
-    public UUID create(ProductInput input) {
+    @CachePut(cacheNames = "algashop:products:v1", key = "#result.id")
+    public ProductDetailOutput create(ProductInput input) {
         Product product = mapToProduct(input);
         productRepository.save(product);
-        return product.getId();
+        return mapper.convert(product, ProductDetailOutput.class);
     }
 
     private Product mapToProduct(ProductInput input) {
@@ -37,13 +42,17 @@ public class ProductManagementApplicationService {
                 .build();
     }
 
-    public void update(UUID productId, ProductInput input) {
+    @CachePut(cacheNames = "algashop:products:v1", key = "#productId")
+    public ProductDetailOutput update(UUID productId, ProductInput input) {
         Product product = findProduct(productId);
         Category category = findCategory(input.getCategoryId());
 
         updateProduct(input, product);
+        product.setCategory(category);
 
         productRepository.save(product);
+
+        return mapper.convert(product, ProductDetailOutput.class);
 
     }
 
