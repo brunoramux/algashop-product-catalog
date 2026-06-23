@@ -155,6 +155,16 @@ public class Product extends AbstractAggregateRoot<Product> {
         return getDiscountPercentageRounded() != null && getDiscountPercentageRounded() > 0;
     }
 
+    /** Returns all pending domain events. Useful for testing. */
+    public java.util.Collection<Object> getPendingEvents() {
+        return super.domainEvents();
+    }
+
+    /** Clears all pending domain events. Useful for testing. */
+    public void resetEvents() {
+        super.clearDomainEvents();
+    }
+
     public Set<Image> getImages() {
         return Collections.unmodifiableSet(this.images);
     }
