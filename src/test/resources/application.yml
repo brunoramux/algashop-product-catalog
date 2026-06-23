@@ -1,0 +1,17 @@
+spring:
+  cache:
+    type: none
+  data:
+    mongodb:
+      auto-index-creation: true
+
+algashop:
+  storage:
+    s3:
+      bucket: test-bucket
+      access-key-id: test
+      secret-access-key: test
+      region: us-east-1
+    images:
+      base-url: http://localhost:4566/test-bucket
+
