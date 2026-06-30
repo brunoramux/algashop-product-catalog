@@ -15,6 +15,12 @@ spring:
       password: algashop
       database: 0
       timeout: 600
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://127.0.0.1:8081
+          jwk-set-uri: http://127.0.0.1:8081/oauth2/jwks
 
 algashop:
   storage:
