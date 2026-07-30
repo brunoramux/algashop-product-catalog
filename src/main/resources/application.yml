@@ -34,6 +34,11 @@ algashop:
     images:
       base-url: http://localhost:4566/algashop-images
 
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+
 logging:
   level:
     org.mongodb.driver.protocol.command: DEBUG
