@@ -21,18 +21,24 @@ spring:
         jwt:
           issuer-uri: http://algashop-authorization-server:8081
           jwk-set-uri: http://algashop-authorization-server:8081/oauth2/jwks
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      endpoint: http://localhost:4566
+      credentials:
+        access-key: LSIAQAAAAAAVNCBMPNSG
+        secret-key: test
+      s3:
+        enabled: true
+        path-style-access-enabled: true
 
 algashop:
   storage:
     s3:
-      bucket: algashop-images
-      access-key-id: test
-      secret-access-key: test
-      region: us-east-1
-      endpoint-override: http://localhost:4566
-      presigned-url-expiration-minutes: 15
+      bucket-name: algashop-product-image
     images:
-      base-url: http://localhost:4566/algashop-images
+      base-url: http://localhost:4566/algashop-product-image
 
 eureka:
   client:

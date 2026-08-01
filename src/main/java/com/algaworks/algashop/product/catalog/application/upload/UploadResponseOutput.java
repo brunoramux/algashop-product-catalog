@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -15,6 +17,7 @@ public class UploadResponseOutput {
     private Long contentLength;
     private String contentType;
     private String uploadSignedUrl;
+    private OffsetDateTime expiresAt;
 
 }
 

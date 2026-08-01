@@ -6,7 +6,6 @@ import com.algaworks.algashop.product.catalog.application.product.query.ImageOut
 import com.algaworks.algashop.product.catalog.application.product.query.ProductDetailOutput;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductFilter;
 import com.algaworks.algashop.product.catalog.application.product.query.ProductQueryService;
-import com.algaworks.algashop.product.catalog.application.upload.ProductImageStorageService;
 import com.algaworks.algashop.product.catalog.application.utility.Mapper;
 import com.algaworks.algashop.product.catalog.domain.model.product.Image;
 import com.algaworks.algashop.product.catalog.domain.model.product.Product;

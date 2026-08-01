@@ -1,6 +1,5 @@
 package com.algaworks.algashop.product.catalog;
 
-import com.algaworks.algashop.product.catalog.application.upload.ProductImageStorageService;
 import com.algaworks.algashop.product.catalog.application.upload.UploadResponseOutput;
 import com.algaworks.algashop.product.catalog.domain.model.category.Category;
 import com.algaworks.algashop.product.catalog.domain.model.category.CategoryRepository;

@@ -1,6 +1,5 @@
 package com.algaworks.algashop.product.catalog.presentation;
 
-import com.algaworks.algashop.product.catalog.application.upload.ProductImageStorageService;
 import com.algaworks.algashop.product.catalog.application.upload.UploadRequestInput;
 import com.algaworks.algashop.product.catalog.application.upload.UploadResponseOutput;
 import jakarta.validation.Valid;
